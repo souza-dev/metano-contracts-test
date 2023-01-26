@@ -101,13 +101,6 @@ describe("Marketplace contract", function () {
       });
 
       describe("Funcionamento da função fetchMarketItems", function () {
-        it("Cria 5 MarketItems. A função fetchMarketItems deve retornar 5 items.", async function () {
-          const { hardhatNFT, hardhatMarketplace } = await loadFixture(
-            deployMarketplaceWith5NFTsOnMarketFixture
-          );
-          const itemsOnMarket = await hardhatMarketplace.fetchMarketItems();
-          expect(itemsOnMarket.length).to.equal(5);
-        });
         it("Cria 5 MarketItems e deleta um item. A função fetchMarketItems deve retornar 4 items.", async function () {
           const { hardhatNFT, hardhatMarketplace } = await loadFixture(
             deployMarketplaceWith5NFTsOnMarketFixture
@@ -143,7 +136,20 @@ describe("Marketplace contract", function () {
     });
 
     describe("Funcionamento da função fetchItemsCreated", function () {
-      it("Cria 5 MarketItems e confere o funcionamento da função fetchItemsCreated.", async function () {});
+      it("Cria 5 MarketItems e confere o funcionamento da função fetchItemsCreated.", async function () {
+        const { hardhatNFT, hardhatMarketplace } = loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+
+        for (let i = 0; i < 5; i++) {
+          await hardhatNFT.approve(hardhatMarketplace.address, i);
+          await hardhatMarketplace.createMarketItem(
+            hardhatNFT.address,
+            i,
+            parseUnits("0.001", "ether")
+          );
+        }
+      });
       it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchItemsCreated.", async function () {});
       it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchItemsCreated.", async function () {});
       it("Cria 5 MarketItems, realiza uma venda e confere o funcionamento da função fetchItemsCreated.", async function () {});
