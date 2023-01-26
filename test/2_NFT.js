@@ -161,34 +161,34 @@ describe("NFT contract", function () {
       expect(ownerOfNFT1).to.equal(addr1.address);
     });
 
-    it("Falhar se a tentar transferir o NFT para um conta inexistente", async function () {
-      const { hardhatNFT, addr1, owner } = await loadFixture(
-        safeMint3NFTsFixture
-      );
-      //Tenta transfir o nft para um conta que não existe
-      // const result = await hardhatNFT.transferFrom(owner.address, "2", 1);
-      // console.log(result);
-      // expect(result).to.be.revertedWith("network does not suppor");
-    });
-    it("Transferir a propriedade do NFT (transferOwnership)", async function () {});
+    // it("Falhar se a tentar transferir o NFT para um conta inexistente", async function () {
+    //   const { hardhatNFT, addr1, owner } = await loadFixture(
+    //     safeMint3NFTsFixture
+    //   );
+    //   //Tenta transfir o nft para um conta que não existe
+    //   // const result = await hardhatNFT.transferFrom(owner.address, "2", 1);
+    //   // console.log(result);
+    //   // expect(result).to.be.revertedWith("network does not suppor");
+    // });
+    // it("Transferir a propriedade do NFT (transferOwnership)", async function () {});
   });
 
-  describe("Funções", function () {
-    it("rennounceOwnership", function () {});
+  // describe("Funções", function () {
+  //   it("rennounceOwnership", function () {});
 
-    it("safeTransferFrom", function () {});
+  //   it("safeTransferFrom", function () {});
 
-    it("transferFrom", function () {});
-    it("transferOwnership", function () {});
-    it("balanceOf", function () {});
+  //   it("transferFrom", function () {});
+  //   it("transferOwnership", function () {});
+  //   it("balanceOf", function () {});
 
-    it("supportInterface", function () {});
+  //   it("supportInterface", function () {});
 
-    it("tokenOfOwnerByIndex", async function () {
-      //Returns a token ID owned by owner at a given index of its token list.
-      //Use along with balanceOf to enumerate all of owner's tokens.
-    });
+  //   it("tokenOfOwnerByIndex", async function () {
+  //     //Returns a token ID owned by owner at a given index of its token list.
+  //     //Use along with balanceOf to enumerate all of owner's tokens.
+  //   });
 
-    it("totalSupply", async function () {});
-  });
+  //   it("totalSupply", async function () {});
+  // });
 });
