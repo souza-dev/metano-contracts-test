@@ -1,4 +1,5 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { default: add } = require("@openzeppelin/cli/lib/scripts/add");
 const { expect } = require("chai");
 const { parseUnits, formatEther } = require("ethers/lib/utils");
 
@@ -132,7 +133,37 @@ describe("Marketplace contract", function () {
       });
     });
 
+    //O fetchActiveItems filtra os items pelo state = Stated.Created, buyer = address(0) e aprovados pro market.
     describe("Funcionamento da função fetchActiveItems", function () {
+      it("Os items retornados pelo fetchActiveItems devem possuir state = Stated.Created.", async function () {
+        const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+        //Confere que possui 5 items no market
+        const itemsOnMarket = await hardhatMarketplace.fetchActiveItems();
+        itemsOnMarket.forEach((item) => expect(item.state).to.equal(0));
+      });
+      it("Os items retornados pelo fetchActiveItems devem possuir buyer = address(0).", async function () {
+        const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+        //Confere que possui 5 items no market
+        const itemsOnMarket = await hardhatMarketplace.fetchActiveItems();
+        itemsOnMarket.forEach((item) =>
+          expect(item.buyer).to.equal(
+            "0x0000000000000000000000000000000000000000"
+          )
+        );
+      });
+      // it("Os items retornados pelo fetchActiveItems devem retornar o address do market ao chamar a função getApproved().", async function () {
+      //   const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+      //     deployMarketplaceWith5NFTsOnMarketFixture
+      //   );
+      //   //Confere que possui 5 items no market
+      //   const itemsOnMarket = await hardhatMarketplace.fetchActiveItems();
+      //   itemsOnMarket.forEach((item) => console.log(item.id));
+      // });
+
       it("Cria 5 MarketItems e deleta um item. A função fetchActiveItems deve retornar 5.", async function () {
         const { hardhatNFT, hardhatMarketplace } = await loadFixture(
           deployMarketplaceWith5NFTsOnMarketFixture
@@ -203,31 +234,111 @@ describe("Marketplace contract", function () {
     });
 
     describe("Funcionamento da função fetchMyPurchasedItems", function () {
-      it("Cria 5 MarketItems. A função fetchItemsCreated deve retornar 5 items.", async function () {
-        const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+      it("Compra item no market usando o addr1 e confere se o fetchMyPurchasedItems retorna o item comprado.", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
           deployMarketplaceWith5NFTsOnMarketFixture
         );
-        expect(await hardhatMarketplace.fetchItemsCreated()).to.equal(5);
+        //Conecta com o addr1 e compra o item 3.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+
+        const itemPurchased = await hardhatMarketplace
+          .connect(addr1)
+          .fetchMyPurchasedItems();
+        expect(itemPurchased[0].id).to.equal(3);
       });
-      it("Cria 5 MarketItems e remove um item. A função fetchItemsCreated deve retornar 5 items.", async function () {
-        const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+      it("Compra item no market usando o addr1 e confere se o fetchMyPurchasedItems retorna o item com buyer ==  addr1.address.", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
           deployMarketplaceWith5NFTsOnMarketFixture
         );
-        expect(await hardhatMarketplace.fetchItemsCreated()).to.equal(5);
+        //Conecta com o addr1 e compra o item 3.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+
+        const itemPurchased = await hardhatMarketplace
+          .connect(addr1)
+          .fetchMyPurchasedItems();
+        expect(itemPurchased[0].buyer).to.equal(addr1.address);
       });
-      it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchItemsCreated.", async function () {});
-      it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchItemsCreated.", async function () {});
-      it("Cria 5 MarketItems, realiza uma venda e confere o funcionamento da função fetchItemsCreated.", async function () {});
+      it("Compra item no market usando o addr1 e confere se o fetchMyPurchasedItems retorna o item com seller = owner.address.", async function () {
+        const { owner, addr1, hardhatNFT, hardhatMarketplace } =
+          await loadFixture(deployMarketplaceWith5NFTsOnMarketFixture);
+        //Conecta com o addr1 e compra o item 3.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+
+        const itemPurchased = await hardhatMarketplace
+          .connect(addr1)
+          .fetchMyPurchasedItems();
+        expect(itemPurchased[0].seller).to.equal(owner.address);
+      });
     });
 
     describe("Funcionamento da função fetchMyCreatedItems.", function () {
-      it("Cria 5 MarketItems e confere o funcionamento da função fetchMyNFTs.", async function () {
-        //Não entendi ainda o funcionamento dessa função. Me parece que ela faz o mesmo
-        //que o NFTOwned do contrato do NFT. Porém essa aqui sempre esta retornando vazio.
+      it("Cria 5 MarketItems. A função fetchMyCreatedItems deve retornar 5 items.", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+        const myCreatedItems = await hardhatMarketplace.fetchMyCreatedItems();
+        expect(myCreatedItems.length).to.equal(5);
       });
-      it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchMyNFTs.", async function () {});
-      it("Cria 5 MarketItems e deleta 2 e confere o funcionamento da função fetchMyNFTs.", async function () {});
-      it("Cria 5 MarketItems, realiza uma venda e confere o funcionamento da função fetchMyNFTs.", async function () {});
+      it("Cria 5 MarketItems. A função fetchMyCreatedItems deve retornar 5 items com state = 0 (Created).", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+        const myCreatedItems = await hardhatMarketplace.fetchMyCreatedItems();
+        myCreatedItems.forEach((item) => expect(item.state).to.equal(0));
+      });
+      it("Cria 5 items e deleta 2. A função fetchMyCreatedItems deve retornar 3 items com state = 0 (Created)", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+
+        await hardhatMarketplace.deleteMarketItem(2);
+        await hardhatMarketplace.deleteMarketItem(3);
+        const myCreatedItems = await hardhatMarketplace.fetchMyCreatedItems();
+        expect(myCreatedItems.length).to.equal(3);
+        myCreatedItems.forEach((item) => expect(item.state).to.equal(0));
+      });
+      it("Cria 5 items e realisa 2 compras. A função fetchMyCreatedItems deve retornar 3 items com state = 0 (Created) e 2 items com o state = 1 (Release)", async function () {
+        const { addr1, hardhatNFT, hardhatMarketplace } = await loadFixture(
+          deployMarketplaceWith5NFTsOnMarketFixture
+        );
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 2, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+
+        const myCreatedItems = await hardhatMarketplace.fetchMyCreatedItems();
+        //Estranhamente os ids do market não começam no zero.
+        //Então o item com id 2 está na posição 1 e com id 3 na posição 2.
+        expect(myCreatedItems.length).to.equal(5);
+        expect(myCreatedItems[0].state).to.equal(0);
+        expect(myCreatedItems[1].state).to.equal(1);
+        expect(myCreatedItems[2].state).to.equal(1);
+        expect(myCreatedItems[3].state).to.equal(0);
+        expect(myCreatedItems[4].state).to.equal(0);
+      });
+    });
+
+    describe("Funcionamento das transações durante a venda", function () {
+      it("O valor do item comprado deve ter sido transferido pro vendedor.", async function () {});
+      it("A taxa de venda deve ter sido transferida pro owner do market.", async function () {});
     });
   });
 });
