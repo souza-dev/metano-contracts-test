@@ -107,6 +107,13 @@ describe("Marketplace contract", function () {
         addr1.address
       );
     });
+    it("Transferir a propriedade do market para o addr1 (que passa a ser o novo owner).", async function () {
+      const { hardhatToken, hardhatMarketplace, addr1 } = await loadFixture(
+        deployMarketplaceFixture
+      );
+      await hardhatMarketplace.transferOwnership(addr1.address);
+      expect(await hardhatMarketplace.owner()).to.equal(addr1.address);
+    });
   });
   describe("Operações dentro do market", function () {
     describe("Todas as funções de fetch devem retornar um array vazio em um deploy novo.", function () {
@@ -164,7 +171,7 @@ describe("Marketplace contract", function () {
       //   itemsOnMarket.forEach((item) => console.log(item.id));
       // });
 
-      it("Cria 5 MarketItems e deleta um item. A função fetchActiveItems deve retornar 5.", async function () {
+      it("Cria 5 MarketItems. A função fetchActiveItems deve retornar 5.", async function () {
         const { hardhatNFT, hardhatMarketplace } = await loadFixture(
           deployMarketplaceWith5NFTsOnMarketFixture
         );
@@ -337,8 +344,113 @@ describe("Marketplace contract", function () {
     });
 
     describe("Funcionamento das transações durante a venda", function () {
-      it("O valor do item comprado deve ter sido transferido pro vendedor.", async function () {});
-      it("A taxa de venda deve ter sido transferida pro owner do market.", async function () {});
+      it("A item (NFT) deve ter sido transferido para o comprador.", async function () {
+        const { owner, addr1, hardhatNFT, hardhatMarketplace } =
+          await loadFixture(deployMarketplaceWith5NFTsOnMarketFixture);
+
+        //O owner deve ter 5 items.
+        const balanceOfOwner = await hardhatNFT.balanceOf(owner.address);
+        expect(balanceOfOwner).to.equal(5);
+        //O addr1 deve ter 0 items.
+        const balanceOfAddr1 = await hardhatNFT.balanceOf(addr1.address);
+        expect(balanceOfAddr1).to.equal(0);
+
+        //Compra o item com o addr1.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+        //O owner deve ter 5 items.
+        const newBalanceOfOwner = await hardhatNFT.balanceOf(owner.address);
+        expect(newBalanceOfOwner).to.equal(4);
+        //O addr1 deve ter 0 items.
+        const newBalanceOfAddr1 = await hardhatNFT.balanceOf(addr1.address);
+        expect(newBalanceOfAddr1).to.equal(1);
+      });
+      it("A taxa de venda deve ter sido transferida pro owner do market ao criar um market item.", async function () {
+        const { owner, addr1, hardhatToken, hardhatNFT, hardhatMarketplace } =
+          await loadFixture(deployMarketplaceWith5NFTsOnMarketFixture);
+
+        const listingFee = "1";
+        const id = 2;
+
+        //Transfere o NFT do owner para o addr1.
+        await hardhatNFT.transferFrom(owner.address, addr1.address, id);
+
+        //Pega o balance do marketOwner e do addr1.
+        const balanceOfOwner = await hardhatToken.balanceOf(owner.address);
+        const balanceOfAddr1 = await hardhatToken.balanceOf(addr1.address);
+        const balanceOfOwnerEther = formatEther(balanceOfOwner);
+        const balanceOfAddr1Ether = formatEther(balanceOfAddr1);
+
+        //Seta o listingFee.
+        await hardhatMarketplace.setListingFee(parseUnits(listingFee, "ether"));
+        //Usando o addr1, aprova o market a transferir o valor do listingFee para outra conta.
+        await hardhatToken
+          .connect(addr1)
+          .approve(hardhatMarketplace.address, parseUnits(listingFee, "ether"));
+
+        //Aprova o NFT para ser operado pelo market.
+        await hardhatNFT.connect(addr1).approve(hardhatMarketplace.address, id);
+        //Cria um item usando o addr1, o que deve gerar o pagamento da taxa para o owner.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketItem(
+            hardhatNFT.address,
+            id,
+            parseUnits("0.001", "ether"),
+            { value: parseUnits(listingFee, "ether") }
+          );
+
+        //Pega os novos balance do marketOwner e do addr1.
+        const newBalanceOfOwner = await hardhatToken.balanceOf(owner.address);
+        const newBalanceOfAddr1 = await hardhatToken.balanceOf(addr1.address);
+        const newBalanceOfOwnerEther = formatEther(newBalanceOfOwner);
+        const newBalanceOfAddr1Ether = formatEther(newBalanceOfAddr1);
+
+        expect(newBalanceOfOwnerEther).to.equal(
+          (parseFloat(balanceOfOwnerEther) + parseFloat(listingFee)).toFixed(1)
+        );
+        expect(newBalanceOfAddr1Ether).to.equal(
+          (parseFloat(balanceOfAddr1Ether) - parseFloat(listingFee)).toFixed(1)
+        );
+      });
+      it("O valor do item comprado deve ter sido transferido pro vendedor.", async function () {
+        const { owner, addr1, hardhatToken, hardhatNFT, hardhatMarketplace } =
+          await loadFixture(deployMarketplaceWith5NFTsOnMarketFixture);
+
+        //O owner deve ter 4000.
+        const balanceOfOwner = await hardhatToken.balanceOf(owner.address);
+        const balanceOfOwnerEther = formatEther(balanceOfOwner);
+        expect(balanceOfOwnerEther).to.equal("4000.0");
+        //O addr1 deve ter 3000.
+        const balanceOfAddr1 = await hardhatToken.balanceOf(addr1.address);
+        const balanceOfAddr1Ether = formatEther(balanceOfAddr1);
+        expect(balanceOfAddr1Ether).to.equal("3000.0");
+
+        //Compra o item com o addr1.
+        await hardhatMarketplace
+          .connect(addr1)
+          .createMarketSale(hardhatNFT.address, 3, {
+            value: ethers.utils.parseEther("0.001"),
+          });
+
+        const expectBalanceOfOwner = parseFloat(balanceOfOwnerEther) + 0.001;
+        const expectBalanceOfAddr1 = parseFloat(balanceOfAddr1Ether) - 0.001;
+
+        const newBalanceOfOwner = await hardhatToken.balanceOf(owner.address);
+        const newBalanceOfOwnerEther = formatEther(newBalanceOfOwner);
+        expect(newBalanceOfOwnerEther).to.equal(
+          expectBalanceOfOwner.toString()
+        );
+
+        const newBalanceOfAddr1 = await hardhatToken.balanceOf(addr1.address);
+        const newBalanceOfAddr1Ether = formatEther(newBalanceOfAddr1);
+        expect(newBalanceOfAddr1Ether).to.equal(
+          expectBalanceOfAddr1.toString()
+        );
+      });
     });
   });
 });

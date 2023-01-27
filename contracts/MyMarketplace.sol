@@ -20,17 +20,17 @@ import "hardhat/console.sol";
 
 contract MyMarketplace is ReentrancyGuard, Ownable {
   using Counters for Counters.Counter;
-  Counters.Counter private _itemCounter;//start from 1
+  Counters.Counter private _itemCounter;
   Counters.Counter private _itemSoldCounter;
 
   address tokenAddress = address(0);
-  address payable public marketowner; //No codigo novo o marketOwner não era payable
+  address marketowner; 
   uint256 public listingFee = 0;
 
   enum State { Created, Release, Inactive }
 
   constructor(address tokenAddr){
-    marketowner = payable(msg.sender); //Casting pra payable que não era feito no código novo. 
+    marketowner = msg.sender;
     tokenAddress = tokenAddr;
   }
 
@@ -101,6 +101,10 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
 
     require(price > 0, "Price must be at least 1 wei");
     require(msg.value == listingFee, "Fee must be equal to listing fee");
+    require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
+
+    IERC20(tokenAddress).transferFrom(msg.sender, marketowner, msg.value);
+    // IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
 
     _itemCounter.increment();
     uint256 id = _itemCounter.current();
@@ -114,11 +118,6 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
       price,
       State.Created
     );
-
-    require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
-
-    // change to approve mechanism from the original direct transfer to market
-    // IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
 
     emit MarketItemCreated(
       id,
@@ -179,13 +178,12 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     require(msg.value == price, "Please submit the asking price");
     require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
 
+    IERC721(nftContract).transferFrom(item.seller, msg.sender, tokenId);
+    IERC20(tokenAddress).transferFrom(msg.sender, marketItems[id].seller, price);
+
     item.buyer = payable(msg.sender);
     item.state = State.Release;
     _itemSoldCounter.increment();    
-
-    IERC721(nftContract).transferFrom(item.seller, msg.sender, tokenId);
-    payable(marketowner).transfer(listingFee);
-    item.seller.transfer(msg.value);
 
     emit MarketItemSold(
       id,
