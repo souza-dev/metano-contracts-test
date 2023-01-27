@@ -1,13 +1,16 @@
-# Sample Hardhat Project
+# Smart contracts da Metano.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+Esses contratos funcionam desde que o NFT não seja transferido para o market.
+Se transferir o NFT para o market, todas as funções de fetch devem ser alteradas.
 
-Try running some of the following tasks:
+Para executar os tests:
 
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
+ npx hardhat test
 ```
+
+### Tests feito com o token de teste.
+
+### Tests feito com o NFT.
+
+### Tests feito com o Marketplace.
