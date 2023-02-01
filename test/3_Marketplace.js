@@ -115,6 +115,7 @@ describe("Marketplace contract", function () {
       expect(await hardhatMarketplace.owner()).to.equal(addr1.address);
     });
   });
+
   describe("Operações dentro do market", function () {
     describe("Todas as funções de fetch devem retornar um array vazio em um deploy novo.", function () {
       it("Confere o fetchActiveItems() de um nova conta e dever retornar um array vazio", async function () {
@@ -138,6 +139,21 @@ describe("Marketplace contract", function () {
         const result = await hardhatMarketplace.fetchMyCreatedItems();
         expect(result).to.be.empty;
       });
+    });
+
+    describe("Testando a função createMarketItem(). Cria um item e confere se ele foi criado.", async function () {
+      const { hardhatNFT, hardhatMarketplace, owner } = await loadFixture(
+        deployMarketplaceFixture
+      );
+      await hardhatNFT.safeMint(owner.address, "CIDIMAGE", "CIDMETA");
+      await hardhatNFT.approve(hardhatMarketplace.address, 0);
+      await hardhatMarketplace.createMarketItem(
+        hardhatNFT.address,
+        0,
+        parseUnits("0.001", "ether")
+      );
+      const activeItems = await fetchActiveItems();
+      expect(activeItems.length).to.equal(1);
     });
 
     //O fetchActiveItems filtra os items pelo state = Stated.Created, buyer = address(0) e aprovados pro market.
