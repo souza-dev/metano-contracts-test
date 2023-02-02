@@ -6,17 +6,12 @@
 
 pragma solidity ^0.8.3;
 
-
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  //prevents re-entrancy attacks
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-//Old contract imports
-import "@openzeppelin/contracts/utils/Address.sol";
-import "hardhat/console.sol";
 
 contract MyMarketplace is ReentrancyGuard, Ownable {
   using Counters for Counters.Counter;
