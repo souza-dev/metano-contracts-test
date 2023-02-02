@@ -39,7 +39,7 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     address nftContract;
     uint256 tokenId;
     address payable seller;
-    address payable buyer;
+    address buyer;
     uint256 price;
     State state;
   }
@@ -101,20 +101,20 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
 
     require(price > 0, "Price must be at least 1 wei");
     require(msg.value == listingFee, "Fee must be equal to listing fee");
-    require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
+    require(IERC721(nftContract).ownerOf(tokenId) == msg.sender, "must be the owner");
 
     IERC20(tokenAddress).transferFrom(msg.sender, marketowner, msg.value);
-    // IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
+    IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
 
     _itemCounter.increment();
-    uint256 id = _itemCounter.current();
+    uint256 id = _itemCounter.current() - 1;
   
     marketItems[id] =  MarketItem(
       id,
       nftContract,
       tokenId,
       payable(msg.sender),
-      payable(address(0)),
+      address(0),
       price,
       State.Created
     );
@@ -138,25 +138,26 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
    * todo ERC721.approve can't work properly!! comment out
    */
   function deleteMarketItem(uint256 itemId) public nonReentrant {
-    require(itemId <= _itemCounter.current(), "id must <= item count");
+    require(itemId < _itemCounter.current(), "id must < item count");
     require(marketItems[itemId].state == State.Created, "item must be on market");
+    require(marketItems[itemId].seller == msg.sender, "sender must be the owner");
+    
     MarketItem storage item = marketItems[itemId];
 
-    require(IERC721(item.nftContract).ownerOf(item.tokenId) == msg.sender, "must be the owner");
-    require(IERC721(item.nftContract).getApproved(item.tokenId) == address(this), "NFT must be approved to market");
+    // require(IERC721(item.nftContract).ownerOf(item.tokenId) == msg.sender, "must be the owner");
+    // require(IERC721(item.nftContract).getApproved(item.tokenId) == address(this), "NFT must be approved to market");
 
     item.state = State.Inactive;
 
     emit MarketItemSold(
-      itemId,
+      item.id,
       item.nftContract,
       item.tokenId,
-      item.seller,
+      msg.sender,
       address(0),
       0,
       State.Inactive
     );
-
   }
 
   /**
@@ -176,9 +177,9 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     uint tokenId = item.tokenId;
 
     require(msg.value == price, "Please submit the asking price");
-    require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
+    // require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
 
-    IERC721(nftContract).transferFrom(item.seller, msg.sender, tokenId);
+    IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
     IERC20(tokenAddress).transferFrom(msg.sender, marketItems[id].seller, price);
 
     item.buyer = payable(msg.sender);
@@ -195,8 +196,6 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
       State.Release
     );    
   }
-
-
 
   /**
    * @dev Returns all unsold market items
@@ -232,10 +231,11 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
    * todo pagination   
    */
    function fetchHelper(FetchOperator _op) private view returns (MarketItem[] memory) {     
+    
     uint total = _itemCounter.current();
-
     uint itemCount = 0;
-    for (uint i = 1; i <= total; i++) {
+
+    for (uint i = 0; i < total; i++) {
       if (isCondition(marketItems[i], _op)) {
         itemCount ++;
       }
@@ -243,7 +243,8 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
 
     uint index = 0;
     MarketItem[] memory items = new MarketItem[](itemCount);
-    for (uint i = 1; i <= total; i++) {
+
+    for (uint i = 0; i <  total; i++) {
       if (isCondition(marketItems[i], _op)) {
         items[index] = marketItems[i];
         index ++;
@@ -272,7 +273,7 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
       return 
         (item.buyer == address(0) 
           && item.state == State.Created
-          && (IERC721(item.nftContract).getApproved(item.tokenId) == address(this))
+          && (IERC721(item.nftContract).getApproved(item.tokenId) == address(0))
         )? true
          : false;
     }else{
