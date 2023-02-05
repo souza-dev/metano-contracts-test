@@ -494,6 +494,42 @@ describe("Marketplace contract", function () {
       const myCreated = await hardhatMarketplace.fetchMyCreatedItems();
       expect(myCreated[0].price).to.equal(parseEther(price));
     });
+    it("A compra deve ser negada se o market item já tiver sido comprado anteriormente", async function () {
+      const { hardhatNFT, hardhatMarketplace, addr1, addr2, owner } =
+        await loadFixture(deployMarketplaceFixture);
+      //Cria um market item com id 0.
+      await hardhatNFT.safeMint(owner.address, "CIDIMAGE", "CIDMETA");
+      await hardhatNFT.approve(hardhatMarketplace.address, 0);
+      await hardhatMarketplace.createMarketItem(
+        hardhatNFT.address,
+        0,
+        parseUnits("0.001", "ether")
+      );
+
+      //Compra ele com o addr1
+      await hardhatMarketplace
+        .connect(addr1)
+        .createMarketSale(hardhatNFT.address, 0, {
+          value: ethers.utils.parseEther("0.001"),
+        });
+
+      //Verfica se foi transferido pro addr1
+      expect(await hardhatNFT.ownerOf(0)).to.equal(addr1.address);
+
+      //Cria um market item com id 1 com o mesmo NFT mas agora criado pelo addr1
+      await hardhatNFT.connect(addr1).approve(hardhatMarketplace.address, 0);
+      await hardhatMarketplace
+        .connect(addr1)
+        .createMarketItem(hardhatNFT.address, 0, parseUnits("0.005", "ether"));
+
+      await expect(
+        hardhatMarketplace
+          .connect(addr2)
+          .createMarketSale(hardhatNFT.address, 0, {
+            value: ethers.utils.parseEther("0.001"),
+          })
+      ).to.be.revertedWith("The market item must be in create state");
+    });
   });
 
   describe("Testes com a função fetchActiveItems()", function () {

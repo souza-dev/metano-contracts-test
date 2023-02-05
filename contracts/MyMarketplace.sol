@@ -171,11 +171,11 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     uint price = item.price;
     uint tokenId = item.tokenId;
 
+    require(item.state == State.Created, "The market item must be in create state");
     require(msg.value == price, "Please submit the asking price");
-    // require(IERC721(nftContract).getApproved(tokenId) == address(this), "NFT must be approved to market");
-
+ 
     IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
-    IERC20(tokenAddress).transferFrom(msg.sender, marketItems[id].seller, price);
+    IERC20(tokenAddress).transferFrom(msg.sender, marketItems[id].seller, msg.value);
 
     item.buyer = payable(msg.sender);
     item.state = State.Release;
