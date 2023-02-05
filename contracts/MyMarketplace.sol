@@ -139,9 +139,6 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     
     MarketItem storage item = marketItems[itemId];
 
-    // require(IERC721(item.nftContract).ownerOf(item.tokenId) == msg.sender, "must be the owner");
-    // require(IERC721(item.nftContract).getApproved(item.tokenId) == address(this), "NFT must be approved to market");
-
     item.state = State.Inactive;
 
     emit MarketItemSold(
