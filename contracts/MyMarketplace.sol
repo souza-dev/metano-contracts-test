@@ -276,4 +276,10 @@ contract MyMarketplace is ReentrancyGuard, Ownable {
     }
   }
 
+  function fetchItemById(uint256 itemId) public view returns (MarketItem memory){
+    require(itemId < _itemCounter.current(), "item id not exist");
+    MarketItem storage item = marketItems[itemId];
+    return item;
+  }
+
 }

@@ -686,4 +686,24 @@ describe("Marketplace contract", function () {
       expect(myCreatedItems[4].state).to.equal(0);
     });
   });
+
+  describe("Testes com a função fetchItemById(id)", function () {
+    it("A função deve retornar o item solicitado pelo id", async function () {
+      const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+        deployMarketplaceWith5NFTsOnMarketFixture
+      );
+
+      const itemsOnMarket = await hardhatMarketplace.fetchActiveItems();
+      const item = await hardhatMarketplace.fetchItemById(0);
+      expect(item.id).to.equal(itemsOnMarket[0].id);
+    });
+    it("A função deve ser revertida se for solicitado um item com id inexistente", async function () {
+      const { hardhatNFT, hardhatMarketplace } = await loadFixture(
+        deployMarketplaceWith5NFTsOnMarketFixture
+      );
+      await expect(hardhatMarketplace.fetchItemById(5)).to.be.revertedWith(
+        "item id not exist"
+      );
+    });
+  });
 });
